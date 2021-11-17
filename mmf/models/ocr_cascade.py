@@ -22,7 +22,7 @@ from transformers.modeling_bert import (
 logger = logging.getLogger(__name__)
 
 
-# @registry.register_model("m4c")
+@registry.register_model("m4c")
 class M4C(BaseModel):
     def __init__(self, config):
         super().__init__(config)
@@ -102,7 +102,7 @@ class M4C(BaseModel):
         )
 
         # object location feature: relative bounding box coordinates (4-dim)
-        self.linear_obj_bbox_to_mmt_in = nn.Linear(4, self.mmt_config.hidden_size)
+        self.linear_obj_bbox_to_mmt_in = nn.Linear(904, self.mmt_config.hidden_size)
 
         self.obj_feat_layer_norm = nn.LayerNorm(self.mmt_config.hidden_size)
         self.obj_bbox_layer_norm = nn.LayerNorm(self.mmt_config.hidden_size)
@@ -183,15 +183,19 @@ class M4C(BaseModel):
 
     def _forward_obj_encoding(self, sample_list, fwd_results):
         # object appearance feature: Faster R-CNN fc7
-        obj_fc6 = sample_list.image_feature_0
-        obj_fc7 = self.obj_faster_rcnn_fc7(obj_fc6)
-        obj_fc7 = F.normalize(obj_fc7, dim=-1)
+        # obj_fc6 = sample_list.image_feature_0
+        # obj_fc7 = self.obj_faster_rcnn_fc7(obj_fc6)
+        # obj_fc7 = F.normalize(obj_fc7, dim=-1)
 
-        obj_feat = obj_fc7
-        obj_bbox = sample_list.obj_bbox_coordinates
-        obj_mmt_in = self.obj_feat_layer_norm(
-            self.linear_obj_feat_to_mmt_in(obj_feat)
-        ) + self.obj_bbox_layer_norm(self.linear_obj_bbox_to_mmt_in(obj_bbox))
+        # obj_feat = obj_fc7
+        # obj_bbox = sample_list.obj_bbox_coordinates
+        # obj_mmt_in = self.obj_feat_layer_norm(
+        #     self.linear_obj_feat_to_mmt_in(obj_feat)
+        # ) + self.obj_bbox_layer_norm(self.linear_obj_bbox_to_mmt_in(obj_bbox))
+        ocr_cascade_fasttext= F.normalize(sample_list.ocr_cascade_context_feature_0, dim=-1)
+        ocr_cascade_phoc= F.normalize(sample_list.ocr_cascade_context_feature_1, dim=-1)
+        ocr_cascade = torch.cat([ocr_cascade_fasttext,ocr_cascade_phoc],dim=-1)
+        obj_mmt_in = self.obj_bbox_layer_norm(self.linear_obj_bbox_to_mmt_in(ocr_cascade))
         obj_mmt_in = self.obj_drop(obj_mmt_in)
         fwd_results["obj_mmt_in"] = obj_mmt_in
 

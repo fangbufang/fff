@@ -149,6 +149,25 @@ class TextVQADataset(MMFDataset):
                 {"blob": sample_info["obj_normalized_boxes"]}
             )["blob"]
 
+        #处理top100rerank_word
+        ocr_cascade = sample_info["top_answer_text"][:100]
+        # Get FastText embeddings for OCR tokens
+        cascade_context = self.ocr_cascade_context_processor({"tokens": ocr_cascade})
+        sample.context = cascade_context["text"]
+        sample.ocr_cascade = cascade_context["tokens"]
+
+        sample.ocr_cascade_context_tokens = object_to_byte_tensor(cascade_context["tokens"])
+        sample.ocr_cascade_context_feature_0 = cascade_context["text"]
+        sample.ocr_cascade_context_info_0 = Sample()
+        sample.ocr_cascade_context_info_0.max_features = cascade_context["length"]
+
+        # Get PHOC embeddings for OCR tokens
+        if hasattr(self, "phoc_processor"):
+            ocr_cascade_context_phoc = self.ocr_cascade_phoc_processor({"tokens": ocr_cascade})
+            sample.ocr_cascade_context_feature_1 = ocr_cascade_context_phoc["text"]
+            sample.ocr_cascade_context_info_1 = Sample()
+            sample.ocr_cascade_context_info_1.max_features = ocr_cascade_context_phoc["length"]
+
         # 3. Load OCR
         if not self.use_ocr:
             # remove all OCRs from the sample

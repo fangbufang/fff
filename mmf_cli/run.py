@@ -134,4 +134,4 @@ def run(opts: typing.Optional[typing.List[str]] = None, predict: bool = False):
 
 
 if __name__ == "__main__":
-    run()
+    run(["config=projects/m4c/configs/textvqa/ocr_cascade.yaml","run_type=train_val", "datasets=textvqa", "model=m4c","training.batch_size=2","training.seed=3", "env.save_dir=./save_google/debug" ])
